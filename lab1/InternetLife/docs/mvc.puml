@@ -1,0 +1,99 @@
+@startuml InternetLife_MVC
+title Каркас MVC с активной моделью — «Сколько ты проживёшь в интернете»
+
+skinparam classAttributeIconSize 0
+skinparam packageStyle rectangle
+skinparam shadowing false
+
+package "by.bsuir.internetlife" {
+  class App {
+    + {static} main(args: String[]): void
+  }
+}
+
+package "model" {
+  interface ModelObserver {
+    + modelChanged(): void
+  }
+
+  class CalculationResult {
+    - hoursPerDay: double
+    - yearsOfLife: double
+    - memesSeen: long
+    - adsScrolled: long
+    + getHoursPerDay(): double
+    + getYearsOfLife(): double
+    + getMemesSeen(): long
+    + getAdsScrolled(): long
+  }
+
+  class InternetLifeModel {
+    - observers: List<ModelObserver>
+    - result: CalculationResult
+    + addObserver(observer: ModelObserver): void
+    + removeObserver(observer: ModelObserver): void
+    + getResult(): CalculationResult
+    + hasResult(): boolean
+    + applyHoursPerDay(hoursPerDay: double): void
+    - notifyObservers(): void
+  }
+}
+
+package "view" {
+  class MainFrame {
+    - model: InternetLifeModel
+    - controller: InternetLifeController
+    - lastEnteredHours: String
+    + setController(controller: InternetLifeController): void
+    + getLastEnteredHours(): String
+    + rememberEnteredHours(hoursText: String): void
+    + showError(message: String): void
+    + modelChanged(): void
+  }
+
+  class InputDialog {
+    - hoursField: JTextField
+    - confirmed: boolean
+    + isConfirmed(): boolean
+    + getHoursText(): String
+  }
+}
+
+package "controller" {
+  class InternetLifeController {
+    - model: InternetLifeModel
+    - view: MainFrame
+    + onEnterData(): void
+    + {static} parseHours(rawHours: String): double
+  }
+}
+
+App --> InternetLifeModel : создаёт
+App --> MainFrame : создаёт
+App --> InternetLifeController : создаёт
+
+InternetLifeController --> InternetLifeModel : вызывает applyHoursPerDay()
+InternetLifeController --> MainFrame : открывает диалог / ошибки
+InternetLifeController ..> InputDialog : создаёт
+
+MainFrame --> InternetLifeController : onEnterData()
+MainFrame --> InternetLifeModel : читает результат
+MainFrame ..|> ModelObserver : реализует
+MainFrame ..> InputDialog : использует
+
+InternetLifeModel --> ModelObserver : уведомляет
+InternetLifeModel --> CalculationResult : хранит
+
+note right of InternetLifeModel
+  Активная модель:
+  после изменения состояния
+  вызывает notifyObservers()
+end note
+
+note right of MainFrame
+  Представление подписывается
+  на модель и обновляет метки
+  в modelChanged()
+end note
+
+@enduml
